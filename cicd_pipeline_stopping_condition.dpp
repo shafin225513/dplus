@@ -1,0 +1,14 @@
+// cicd_pipeline.dpp
+RESOURCE testing_suite junit LOCATED AT "ci.jenkins.internal/tests"
+RESOURCE cd_pipeline deployment_gate IDENTIFIED BY "echo '[D++ CRITICAL HOOK] CI/CD PIPELINE REJECTED - DEPLOYMENT ABORTED PERMANENTLY!'"
+
+SET evaluation_interval = 1 second
+
+// Core Logic: If the test framework indicates a sustained failure loop, trip the circuit breaker
+WHEN junit.pass_rate IS LESS THAN 99 FOR 2 seconds
+TRIGGER deployment_gate HALT_PRODUCTION
+
+// The Resilient Flaky-Test Filter
+VALIDATE junit.pass_rate BETWEEN 99 AND 100
+RETRY LIMIT = 3
+TIMEOUT junit.pass_rate AFTER 4 seconds
